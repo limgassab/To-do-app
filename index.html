@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="description" content="A simple daily work log, project tracker, and to-do list." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon-192.png" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+  <title>Daily Work Log</title>
+</head>
+<body>
+  <div id="appShell">
+    <header class="topbar">
+      <button class="brand" type="button" data-go-view="todayView" aria-label="Go to Today">
+        <span class="brand-mark" aria-hidden="true">✓</span>
+        <span>
+          <small>PERSONAL WORKSPACE</small>
+          <strong>Daily Work Log</strong>
+        </span>
+      </button>
+      <div class="topbar-actions">
+        <button id="installBtn" class="button secondary hidden" type="button">Install app</button>
+        <button id="quickTaskBtn" class="button primary compact" type="button"><span aria-hidden="true">＋</span> Task</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="todayView" class="view active" aria-labelledby="todayNav">
+        <div class="hero-card">
+          <div>
+            <p id="todayLongDate" class="hero-date"></p>
+            <h1>Keep today clear and simple.</h1>
+            <p>Record what moved forward, then choose the first priority for tomorrow.</p>
+          </div>
+          <div class="progress-card" aria-label="Today's task completion">
+            <span id="todayProgressValue">0%</span>
+            <small>tasks done</small>
+          </div>
+        </div>
+
+        <div class="today-layout">
+          <div class="main-column">
+            <section class="panel quick-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-label">TODAY'S WORK</p>
+                  <h2>Record what you worked on</h2>
+                </div>
+                <span class="helper-badge">Takes about 1 minute</span>
+              </div>
+
+              <form id="workEntryForm" class="stack-form">
+                <input id="entryEditingId" type="hidden" />
+                <div class="field-row two-columns">
+                  <label>
+                    Project
+                    <select id="entryProject" required></select>
+                  </label>
+                  <label>
+                    Status
+                    <select id="entryStatus">
+                      <option value="progressing">Progressing</option>
+                      <option value="completed">Completed</option>
+                      <option value="blocked">Blocked</option>
+                    </select>
+                  </label>
+                </div>
+
+                <label>
+                  What did you work on?
+                  <textarea id="entrySummary" rows="3" required placeholder="Example: Reviewed the latest simulation results and compared the cutoff conditions."></textarea>
+                </label>
+
+                <details id="entryOptionalDetails" class="optional-details">
+                  <summary>Add outcome, next step, or time</summary>
+                  <div class="optional-fields">
+                    <div class="field-row two-columns">
+                      <label>
+                        Outcome or learning
+                        <textarea id="entryOutcome" rows="2" placeholder="What changed, worked, or became clearer?"></textarea>
+                      </label>
+                      <label>
+                        Next step
+                        <textarea id="entryNextStep" rows="2" placeholder="What should happen next?"></textarea>
+                      </label>
+                    </div>
+                    <label>
+                      Time spent <span class="optional-text">optional</span>
+                      <input id="entryTime" type="text" placeholder="Example: 1 h 30 min" />
+                    </label>
+                  </div>
+                </details>
+
+                <div class="form-actions">
+                  <button id="cancelEntryEditBtn" class="button ghost hidden" type="button">Cancel edit</button>
+                  <button id="saveEntryBtn" class="button primary" type="submit">Save work entry</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-label">WORK LOG</p>
+                  <h2>Today's entries</h2>
+                </div>
+                <span id="todayEntryCount" class="pill">0 entries</span>
+              </div>
+              <div id="todayEntries" class="card-list"></div>
+            </section>
+
+            <section class="panel review-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-label">END OF DAY</p>
+                  <h2>Close the day</h2>
+                </div>
+                <span id="reviewStatus" class="pill subtle">Not finished</span>
+              </div>
+
+              <form id="dailyReviewForm" class="stack-form">
+                <label>
+                  Main progress today
+                  <textarea id="reviewProgress" rows="2" placeholder="What is the most important thing you accomplished?"></textarea>
+                </label>
+                <div class="field-row two-columns">
+                  <label>
+                    Blocker
+                    <textarea id="reviewBlocker" rows="2" placeholder="Leave blank if there was no blocker."></textarea>
+                  </label>
+                  <label>
+                    First priority tomorrow
+                    <textarea id="reviewTomorrow" rows="2" placeholder="What should you begin with tomorrow?"></textarea>
+                  </label>
+                </div>
+                <div class="field-row two-columns align-end-row">
+                  <label>
+                    Focus today
+                    <select id="reviewFocus">
+                      <option value="">Not rated</option>
+                      <option value="1">1 — Very low</option>
+                      <option value="2">2 — Low</option>
+                      <option value="3">3 — Moderate</option>
+                      <option value="4">4 — Good</option>
+                      <option value="5">5 — Excellent</option>
+                    </select>
+                  </label>
+                  <button class="button primary" type="submit">Finish day</button>
+                </div>
+              </form>
+            </section>
+          </div>
+
+          <aside class="side-column">
+            <section class="panel sticky-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="section-label">TO-DO</p>
+                  <h2>Today</h2>
+                </div>
+                <button id="addTaskTodayBtn" class="text-button" type="button">＋ Add</button>
+              </div>
+              <div id="todayTasks" class="task-list"></div>
+            </section>
+
+            <section class="panel compact-panel">
+              <p class="section-label">QUICK SUMMARY</p>
+              <div class="stats-grid">
+                <div><strong id="statEntries">0</strong><span>entries</span></div>
+                <div><strong id="statProjects">0</strong><span>projects</span></div>
+                <div><strong id="statTasks">0</strong><span>open tasks</span></div>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <section id="tasksView" class="view" aria-labelledby="tasksNav">
+        <div class="page-title-row">
+          <div>
+            <p class="section-label">TASKS</p>
+            <h1>Plan what comes next</h1>
+            <p class="page-description">Keep tasks short and connect each one to a project.</p>
+          </div>
+          <button id="addTaskPageBtn" class="button primary" type="button">＋ Add task</button>
+        </div>
+
+        <div class="filter-bar">
+          <div class="filter-chips" role="group" aria-label="Task status filter">
+            <button class="filter-chip active" data-task-filter="open" type="button">Open</button>
+            <button class="filter-chip" data-task-filter="today" type="button">Today</button>
+            <button class="filter-chip" data-task-filter="upcoming" type="button">Upcoming</button>
+            <button class="filter-chip" data-task-filter="completed" type="button">Completed</button>
+          </div>
+          <select id="taskProjectFilter" aria-label="Filter tasks by project"></select>
+        </div>
+        <div id="allTasks" class="task-board"></div>
+      </section>
+
+      <section id="projectsView" class="view" aria-labelledby="projectsNav">
+        <div class="page-title-row">
+          <div>
+            <p class="section-label">PROJECTS</p>
+            <h1>Keep your work organized</h1>
+            <p class="page-description">Use one project for each manuscript, experiment, or research direction.</p>
+          </div>
+          <button id="addProjectBtn" class="button primary" type="button">＋ Add project</button>
+        </div>
+        <div id="projectGrid" class="project-grid"></div>
+      </section>
+
+      <section id="historyView" class="view" aria-labelledby="historyNav">
+        <div class="page-title-row">
+          <div>
+            <p class="section-label">HISTORY</p>
+            <h1>See what you have worked on</h1>
+            <p class="page-description">Browse your work by day or project.</p>
+          </div>
+        </div>
+
+        <div class="filter-bar history-filters">
+          <label>
+            From
+            <input id="historyFrom" type="date" />
+          </label>
+          <label>
+            To
+            <input id="historyTo" type="date" />
+          </label>
+          <label>
+            Project
+            <select id="historyProjectFilter"></select>
+          </label>
+          <button id="clearHistoryFilters" class="button secondary" type="button">Clear</button>
+        </div>
+        <div id="historyList" class="history-list"></div>
+      </section>
+
+      <section id="backupView" class="view" aria-labelledby="backupNav">
+        <div class="page-title-row">
+          <div>
+            <p class="section-label">SETTINGS & BACKUP</p>
+            <h1>Keep your records safe</h1>
+            <p class="page-description">Your information stays in this browser unless you export a backup.</p>
+          </div>
+        </div>
+
+        <div class="settings-grid">
+          <section class="panel">
+            <p class="section-label">BACKUP</p>
+            <h2>Export your data</h2>
+            <p class="muted">Download one JSON file containing your projects, tasks, work entries, and daily reviews.</p>
+            <button id="exportBtn" class="button primary" type="button">Export backup</button>
+          </section>
+
+          <section class="panel">
+            <p class="section-label">RESTORE</p>
+            <h2>Import a backup</h2>
+            <p class="muted">Choose a backup made by this app. It will replace the information currently stored here.</p>
+            <label class="file-picker">
+              <span>Choose backup file</span>
+              <input id="importInput" type="file" accept="application/json,.json" />
+            </label>
+          </section>
+
+          <section class="panel">
+            <p class="section-label">STORAGE</p>
+            <h2>About this version</h2>
+            <p class="muted">This version works offline and stores data locally on this device.</p>
+            <p id="storageSummary" class="storage-summary"></p>
+          </section>
+
+          <section class="panel danger-panel">
+            <p class="section-label danger-label">RESET</p>
+            <h2>Clear all data</h2>
+            <p class="muted">This removes every project, task, work entry, and daily review from this browser.</p>
+            <button id="clearDataBtn" class="button danger" type="button">Clear all data</button>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Main navigation">
+      <button id="todayNav" class="nav-item active" data-view="todayView" type="button"><span>✓</span>Today</button>
+      <button id="tasksNav" class="nav-item" data-view="tasksView" type="button"><span>☑</span>Tasks</button>
+      <button id="projectsNav" class="nav-item" data-view="projectsView" type="button"><span>▦</span>Projects</button>
+      <button id="historyNav" class="nav-item" data-view="historyView" type="button"><span>◷</span>History</button>
+      <button id="backupNav" class="nav-item" data-view="backupView" type="button"><span>⇩</span>Backup</button>
+    </nav>
+  </div>
+
+  <dialog id="taskDialog" aria-labelledby="taskDialogTitle">
+    <form id="taskForm" class="dialog-card">
+      <div class="dialog-heading">
+        <div>
+          <p class="section-label">TO-DO</p>
+          <h2 id="taskDialogTitle">Add task</h2>
+        </div>
+        <button class="dialog-close" data-close-dialog="taskDialog" type="button" aria-label="Close dialog">×</button>
+      </div>
+      <input id="taskEditingId" type="hidden" />
+      <label>
+        Task
+        <input id="taskTitle" type="text" required maxlength="180" placeholder="What needs to be done?" />
+      </label>
+      <div class="field-row two-columns">
+        <label>
+          Project
+          <select id="taskProject" required></select>
+        </label>
+        <label>
+          Due date <span class="optional-text">optional</span>
+          <input id="taskDueDate" type="date" />
+        </label>
+      </div>
+      <label>
+        Priority
+        <select id="taskPriority">
+          <option value="normal">Normal</option>
+          <option value="high">High</option>
+          <option value="low">Low</option>
+        </select>
+      </label>
+      <div class="dialog-actions">
+        <button class="button ghost" data-close-dialog="taskDialog" type="button">Cancel</button>
+        <button id="saveTaskBtn" class="button primary" type="submit">Save task</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="projectDialog" aria-labelledby="projectDialogTitle">
+    <form id="projectForm" class="dialog-card">
+      <div class="dialog-heading">
+        <div>
+          <p class="section-label">PROJECT</p>
+          <h2 id="projectDialogTitle">Add project</h2>
+        </div>
+        <button class="dialog-close" data-close-dialog="projectDialog" type="button" aria-label="Close dialog">×</button>
+      </div>
+      <input id="projectEditingId" type="hidden" />
+      <label>
+        Project name
+        <input id="projectName" type="text" required maxlength="100" placeholder="Example: Microtubule exciton manuscript" />
+      </label>
+      <label>
+        Short description <span class="optional-text">optional</span>
+        <textarea id="projectDescription" rows="3" maxlength="400" placeholder="What is this project about?"></textarea>
+      </label>
+      <fieldset class="color-fieldset">
+        <legend>Project color</legend>
+        <div id="projectColorOptions" class="color-options"></div>
+      </fieldset>
+      <div class="dialog-actions">
+        <button class="button ghost" data-close-dialog="projectDialog" type="button">Cancel</button>
+        <button id="saveProjectBtn" class="button primary" type="submit">Save project</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <footer class="app-footer">Daily Work Log · Version 2.0</footer>
+  <script src="app.js" defer></script>
+</body>
+</html>
