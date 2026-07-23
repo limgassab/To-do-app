@@ -1,4 +1,4 @@
-const CACHE_NAME = 'daily-work-log-v3';
+const CACHE_NAME = 'daily-work-log-v4';
 const APP_FILES = [
   './',
   './index.html',

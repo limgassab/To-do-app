@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'dailyWorkLog.v1';
 const THEME_KEY = 'dailyWorkLog.theme';
-const APP_VERSION = 3;
+const APP_VERSION = 4;
 const COLOR_OPTIONS = ['#2a8f88', '#4f7ea8', '#3f8f6b', '#6388a8', '#6e8f7c', '#7d83a5', '#b07b55', '#9a6f91'];
 
 const byId = id => document.getElementById(id);
@@ -34,7 +34,7 @@ const defaultState = () => ({
 });
 
 let state = loadState();
-let currentTaskFilter = 'today';
+let currentTaskFilter = 'open';
 let selectedProjectColor = COLOR_OPTIONS[0];
 let deferredInstallPrompt = null;
 let toastTimer = null;
@@ -199,18 +199,50 @@ function renderTodayTasks() {
   let tasks = [...state.tasks];
 
   if (projectFilter !== 'all') tasks = tasks.filter(task => task.projectId === projectFilter);
-  if (currentTaskFilter === 'today') {
-    tasks = tasks.filter(task => task.status !== 'completed' && (!task.dueDate || task.dueDate <= today));
-  } else if (currentTaskFilter === 'upcoming') {
-    tasks = tasks.filter(task => task.status !== 'completed' && task.dueDate && task.dueDate > today);
+
+  const openTasks = tasks.filter(task => task.status !== 'completed');
+  const overdue = openTasks.filter(task => task.dueDate && task.dueDate < today).sort(taskSort);
+  const dueToday = openTasks.filter(task => task.dueDate === today).sort(taskSort);
+  const upcoming = openTasks.filter(task => task.dueDate && task.dueDate > today).sort(taskSort);
+  const noDate = openTasks.filter(task => !task.dueDate).sort(taskSort);
+  const completed = tasks.filter(task => task.status === 'completed').sort((a, b) =>
+    String(b.completedAt || b.updatedAt || b.createdAt || '').localeCompare(String(a.completedAt || a.updatedAt || a.createdAt || ''))
+  );
+
+  if (currentTaskFilter === 'completed') {
+    byId('todayTasks').innerHTML = completed.length
+      ? taskGroupHTML('Completed', completed, 'completed')
+      : emptyState('Nothing completed yet');
   } else {
-    tasks = tasks.filter(task => task.status === 'completed');
+    const groups = [
+      overdue.length ? taskGroupHTML('Overdue', overdue, 'overdue') : '',
+      dueToday.length ? taskGroupHTML('Due today', dueToday, 'today') : '',
+      upcoming.length ? taskGroupHTML('Upcoming', upcoming, 'upcoming') : '',
+      noDate.length ? taskGroupHTML('No date', noDate, 'no-date') : ''
+    ].filter(Boolean).join('');
+    byId('todayTasks').innerHTML = groups || emptyState('No open tasks', 'Add a task when something needs your attention.');
   }
 
-  tasks.sort(taskSort);
-  byId('todayTasks').innerHTML = tasks.length
-    ? tasks.map(taskCardHTML).join('')
-    : emptyState(currentTaskFilter === 'completed' ? 'Nothing completed yet' : 'Nothing here');
+  const allAttentionTasks = state.tasks.filter(task =>
+    task.status !== 'completed' && task.dueDate && task.dueDate <= today
+  );
+  const allOverdueCount = allAttentionTasks.filter(task => task.dueDate < today).length;
+  const allDueTodayCount = allAttentionTasks.filter(task => task.dueDate === today).length;
+  const attentionCount = allAttentionTasks.length;
+  const badge = byId('toDoBadge');
+  badge.textContent = attentionCount > 99 ? '99+' : String(attentionCount);
+  badge.classList.toggle('hidden', attentionCount === 0);
+
+  const reminder = byId('taskReminder');
+  reminder.classList.toggle('hidden', attentionCount === 0);
+  reminder.classList.toggle('has-overdue', allOverdueCount > 0);
+  if (attentionCount > 0) {
+    byId('taskReminderTitle').textContent = attentionCount === 1 ? '1 task needs attention' : `${attentionCount} tasks need attention`;
+    const parts = [];
+    if (allOverdueCount) parts.push(`${allOverdueCount} overdue`);
+    if (allDueTodayCount) parts.push(`${allDueTodayCount} due today`);
+    byId('taskReminderText').textContent = parts.join(' · ');
+  }
 }
 
 function entryCardHTML(entry) {
@@ -239,24 +271,47 @@ function entryCardHTML(entry) {
 function taskSort(a, b) {
   if (a.status === 'completed' && b.status !== 'completed') return 1;
   if (a.status !== 'completed' && b.status === 'completed') return -1;
+  const dueComparison = (a.dueDate || '9999-12-31').localeCompare(b.dueDate || '9999-12-31');
+  if (dueComparison !== 0) return dueComparison;
   const priorityRank = { high: 0, normal: 1, low: 2 };
   if (priorityRank[a.priority] !== priorityRank[b.priority]) return priorityRank[a.priority] - priorityRank[b.priority];
-  return (a.dueDate || '9999-12-31').localeCompare(b.dueDate || '9999-12-31');
+  return a.title.localeCompare(b.title);
+}
+
+function taskGroupHTML(title, tasks, tone = '') {
+  return `
+    <section class="task-group task-group-${escapeHTML(tone)}">
+      <div class="task-group-heading">
+        <h2>${escapeHTML(title)}</h2>
+        <span>${tasks.length}</span>
+      </div>
+      <div class="task-list">${tasks.map(taskCardHTML).join('')}</div>
+    </section>`;
+}
+
+function taskDueInfo(task) {
+  if (!task.dueDate || task.status === 'completed') return null;
+  const today = todayISO();
+  if (task.dueDate < today) return { label: 'Overdue', className: 'overdue' };
+  if (task.dueDate === today) return { label: 'Today', className: 'today' };
+  if (task.dueDate === tomorrowISO()) return { label: 'Tomorrow', className: 'upcoming' };
+  return { label: formatShortDate(task.dueDate), className: 'upcoming' };
 }
 
 function taskCardHTML(task) {
   const project = projectById(task.projectId);
   const completed = task.status === 'completed';
+  const due = taskDueInfo(task);
   return `
-    <article class="task-card ${completed ? 'completed' : ''}">
+    <article class="task-card ${completed ? 'completed' : ''} ${due ? `task-${due.className}` : ''}">
       <div class="task-row">
         <div class="task-main">
           <button class="task-check ${completed ? 'checked' : ''}" type="button" data-toggle-task="${escapeHTML(task.id)}" aria-label="${completed ? 'Reopen' : 'Complete'} task"></button>
-          <div>
+          <div class="task-copy">
             <div class="task-title">${escapeHTML(task.title)}</div>
             <div class="task-meta">
               <span class="project-badge"><span class="project-dot" style="--project-color:${safeColor(project.color)}"></span>${escapeHTML(project.name)}</span>
-              ${task.dueDate ? `<span>${escapeHTML(formatShortDate(task.dueDate))}</span>` : ''}
+              ${due ? `<span class="due-pill due-${due.className}">${escapeHTML(due.label)}</span>` : (task.dueDate ? `<span>${escapeHTML(formatShortDate(task.dueDate))}</span>` : '')}
               ${task.priority !== 'normal' ? `<span class="priority-${escapeHTML(task.priority)}">${escapeHTML(task.priority)}</span>` : ''}
             </div>
           </div>
@@ -613,7 +668,7 @@ function setupEvents() {
   });
 
   byId('quickTaskBtn').addEventListener('click', () => openTaskDialog());
-  byId('addTaskTodayBtn').addEventListener('click', () => openTaskDialog(null, true));
+  byId('addTaskTodayBtn').addEventListener('click', () => openTaskDialog());
   byId('addProjectBtn').addEventListener('click', () => openProjectDialog());
   byId('settingsBtn').addEventListener('click', () => byId('settingsDialog').showModal());
 

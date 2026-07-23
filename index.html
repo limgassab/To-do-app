@@ -40,6 +40,15 @@
           <span id="reviewStatus" class="day-status">Open day</span>
         </div>
 
+        <button id="taskReminder" class="task-reminder hidden" data-go-view="tasksView" type="button">
+          <span class="task-reminder-mark" aria-hidden="true">!</span>
+          <span class="task-reminder-copy">
+            <strong id="taskReminderTitle">Tasks need attention</strong>
+            <small id="taskReminderText"></small>
+          </span>
+          <span class="task-reminder-action">View to-do</span>
+        </button>
+
         <div class="today-layout">
           <div class="main-column">
             <section class="surface quick-entry-surface">
@@ -138,25 +147,28 @@
             </details>
           </div>
 
-          <aside class="side-column">
-            <section class="surface task-surface">
-              <div class="section-heading task-heading">
-                <h2>To-do</h2>
-                <button id="addTaskTodayBtn" class="text-button" type="button">＋ Add</button>
-              </div>
 
-              <div class="task-toolbar">
-                <div class="filter-chips" role="group" aria-label="Task filter">
-                  <button class="filter-chip active" data-task-filter="today" type="button">Now</button>
-                  <button class="filter-chip" data-task-filter="upcoming" type="button">Upcoming</button>
-                  <button class="filter-chip" data-task-filter="completed" type="button">Done</button>
-                </div>
-                <select id="taskProjectFilter" aria-label="Filter tasks by project"></select>
-              </div>
+        </div>
+      </section>
 
-              <div id="todayTasks" class="task-list"></div>
-            </section>
-          </aside>
+      <section id="tasksView" class="view" aria-labelledby="tasksNav">
+        <div class="page-heading tasks-page-heading">
+          <div>
+            <p class="eyebrow">TO-DO</p>
+            <h1>Your tasks</h1>
+          </div>
+          <button id="addTaskTodayBtn" class="button primary" type="button">＋ Task</button>
+        </div>
+
+        <div class="tasks-page">
+          <div class="task-page-toolbar">
+            <div class="filter-chips" role="group" aria-label="Task filter">
+              <button class="filter-chip active" data-task-filter="open" type="button">Open</button>
+              <button class="filter-chip" data-task-filter="completed" type="button">Done</button>
+            </div>
+            <select id="taskProjectFilter" aria-label="Filter tasks by project"></select>
+          </div>
+          <div id="todayTasks" class="task-groups"></div>
         </div>
       </section>
 
@@ -203,9 +215,12 @@
     </main>
 
     <nav class="bottom-nav" aria-label="Main navigation">
-      <button id="todayNav" class="nav-item active" data-view="todayView" type="button"><span aria-hidden="true">✓</span>Today</button>
-      <button id="projectsNav" class="nav-item" data-view="projectsView" type="button"><span aria-hidden="true">▦</span>Projects</button>
-      <button id="historyNav" class="nav-item" data-view="historyView" type="button"><span aria-hidden="true">◷</span>History</button>
+      <button id="todayNav" class="nav-item active" data-view="todayView" type="button"><span aria-hidden="true">✓</span><span>Today</span></button>
+      <button id="tasksNav" class="nav-item" data-view="tasksView" type="button">
+        <span aria-hidden="true">☑</span><span>To-do</span><span id="toDoBadge" class="nav-badge hidden">0</span>
+      </button>
+      <button id="projectsNav" class="nav-item" data-view="projectsView" type="button"><span aria-hidden="true">▦</span><span>Projects</span></button>
+      <button id="historyNav" class="nav-item" data-view="historyView" type="button"><span aria-hidden="true">◷</span><span>History</span></button>
     </nav>
   </div>
 
